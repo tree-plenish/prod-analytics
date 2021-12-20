@@ -5,7 +5,7 @@ from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.chart import BarChart, Reference, Series
 
-from deps.gdrive.GoogleDriveOperations import GDrive as gdrive
+from deps.gdrive import GoogleDriveOperations
 from deps.tech_team_database.dependencies.DatabaseSQLOperations import TpSQL
 
 
@@ -35,6 +35,8 @@ class Dashboard:
                
         data = self.update_data(orders)
         self.upload_data(data, orders)
+        
+        self.g = GoogleDriveOperations.GDrive() # Google Drive handle
 
     
     def retrieve_data(self):
@@ -77,8 +79,8 @@ class Dashboard:
         
         # Uploading using drive
         # TODO: Test this call
-        gdrive.uploadShareableFile("Tree Request Dash.xlsx", "Tree Request Dash.xlsx")
-        
+        fileID = self.g.uploadFile("Tree Request Dash.xlsx", "Tree Request Dash.xlsx", parentID='1O7s--cl3r-X1j7hGpVepPhLIuR6Qy7eg')
+        print("https://drive.google.com/file/d/" + str(fileID) + "/view?usp=sharing")
 
     #########################
     # SPECIFIC UPDATE FUNCS #
