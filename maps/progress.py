@@ -22,13 +22,17 @@ df = df.iloc[known_idx]
 df["STATE"] = states
 
 # Now we group it as a collection
-count = df.groupby("STATE").size()
+
+count = df.groupby("STATE").agg({df.columns[0]:len})
+count = count.apply(lambda x:x.sort_values(ascending=False))
+print("State Counts: ")
+print(count)
 
 fig = go.Figure(data=go.Choropleth(type='choropleth',
         colorscale = 'greens',
         autocolorscale = True,
         locations = list(count.index),
-        z = list(count.values),
+        z = list(count[df.columns[0]]),
         locationmode = 'USA-states',
         marker_line_color='black'
 ))
