@@ -2,11 +2,12 @@ from re import X
 import numpy as np
 import pandas as pd
 import time
+from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.chart import BarChart, Reference, Series
 from tech_team_database.dependencies.DatabaseSQLOperations import TpSQL
-from gdrive import GoogleDriveOperations
+from deps.gdrive import GoogleDriveOperations
 
 
 class Dashboard:
@@ -66,14 +67,11 @@ class Dashboard:
         contest = pd.DataFrame(schools, columns=['schoolid'])
         i = 0
         for time in times:
-            contest[list(time.keys())[0]] = 0
+            contest[datetime.fromtimestamp(list(time.keys())[0])] = 0
             while i < len(orders):
-                if orders.iloc[i]['submit_time'] <= time[list(time.keys())[0]]:
-                    contest.loc[orders.iloc[i]['schoolid'] ==
-                                contest['schoolid'], list(time.keys())[0]] += orders.iloc[i]['number']
-                    i += 1
-                else:
-                    break
+                if orders.iloc[i]['submit_time'] >= list(time.keys())[0] and orders.iloc[i]['submit_time'] <= time[list(time.keys())[0]]:
+                    contest.iat[contest[orders.iloc[i]['schoolid'] == contest['schoolid']].index[0], times.index(time) + 1] += orders.iloc[i]['number']
+                i += 1                  
 
         return contest
 
@@ -93,9 +91,13 @@ class Dashboard:
 
         # Sheet 2: Biweekly Competitions
         # times should be a list of dictionaries with the start time as the key and the end time as the value.
-        times = [{}]
-        contest = self.update_contest(self.school_codes, orders, times)
-        for r in contest:
+        starting_unix = 1642957200
+        delta_unix = 1209600  # 60 * 60 * 24 * 14
+        competition_count = (time.time() - starting_unix) // delta_unix + 1 # Quick calc. for # of competitions so far
+
+        times = [{starting_unix + i * delta_unix : starting_unix + (i + 1) * delta_unix} for i in range(int(competition_count) + 1)]
+        contest = self.update_contest(self.schoolcodes, orders, times)
+        for r in dataframe_to_rows(contest, index=True):
             ws2.append(r)
 
         # Sheet 3: Unaggregated Data to go into chart
