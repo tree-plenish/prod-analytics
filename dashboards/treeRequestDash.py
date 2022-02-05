@@ -14,26 +14,22 @@ class Dashboard:
     """
     Looped retrieval, update and upload of an internal tree request
     dashboard. Update Time Independent but will be looped by main hourly.
-
     INCLUDES: 
     schoolcode
     # Trees Sold
     % Tree Goal Reached
     # Saplings Over last 7 days
-
-
     Uploaded via existing gdrive wrapper.
-
     """
 
     def __init__(self):
         """ Loop through full processes once called. """
 
-        self.schoolcodes = pd.read_csv("schoolcodes.csv")["schoolid"].values
         self.g = GoogleDriveOperations.GDrive()  # Google Drive handle
 
         self.tpsql = TpSQL()  # database handle
         orders = self.retrieve_data()
+        self.schoolcodes = np.unique(orders["schoolid"]).tolist()
 
         data = self.update_data(orders)
 
@@ -45,7 +41,6 @@ class Dashboard:
 
     def update_data(self, orders):
         """ Initializing base ids & calling all of the data update functions.
-
         Args:
             orders (df): current tree_order table
         """
@@ -64,13 +59,14 @@ class Dashboard:
             Called in upload_data
         """
         orders = orders.sort_values(by='submit_time')
-        contest = pd.DataFrame(schools, columns=['schoolid'])
+        contest = pd.DataFrame(schools, columns=["schoolid"])
+        contest.index = schools
         i = 0
         for time in times:
             contest[datetime.fromtimestamp(list(time.keys())[0])] = 0
             while i < len(orders):
                 if orders.iloc[i]['submit_time'] >= list(time.keys())[0] and orders.iloc[i]['submit_time'] <= time[list(time.keys())[0]]:
-                    contest.iat[contest[orders.iloc[i]['schoolid'] == contest['schoolid']].index[0], times.index(time) + 1] += orders.iloc[i]['number']
+                    contest.iat[contest['schoolid'].tolist().index(orders.iloc[i]['schoolid']), times.index(time) + 1] += orders.iloc[i]['number']
                 i += 1                  
 
         return contest
@@ -118,7 +114,6 @@ class Dashboard:
 
     def get_sapling_counts(self, orders, schoolcodes):
         """ Getting list of sapling counts for the entire event cycle.
-
         Args:
             orders (df): current tree_order table
             schoolcodes (list): list of school ids
@@ -133,7 +128,6 @@ class Dashboard:
 
     def get_recent_sapling_counts(self, orders, schoolcodes, days):
         """ Getting list of sapling counts for the entire event cycle.
-
         Args:
             orders (df): current tree_order table
             schoolcodes (list): list of school ids
